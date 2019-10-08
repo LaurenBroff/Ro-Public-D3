@@ -4,6 +4,3 @@ Feel free to browse our current list of D3 examples on our [home page](https://r
 
 Each example is organized into it's own subdirectory with all data files, javascript, and html files included. 
 
-
-### Other Links
-
