@@ -90,13 +90,13 @@
 		 //Width and height of map
 
 		 var width = 960, height = 600;
-		 var color_domain = [1, 2, 3]
-		 var ext_color_domain = [1, 2, 3]
+		 var color_domain = [1, 2, 3, 4]
+		 var ext_color_domain = [1, 2, 3,4 ]
 		 var color = d3.scale.ordinal()
 
 		 .domain(color_domain)
-		 .range(["#0000", "1ece96", "rbg(73,79,86)"]);
-		 var legendText = ["Not a desert","Rural desert", "Urban desert"];
+		 .range(["#0000", "1ece96", "rbg(73,79,86)", "ffff"]);
+		 var legendText = ["Not a desert","Rural desert", "Urban desert", "test"];
 
 			var div = d3.select("body").append("div")
 		 .attr("class", "tooltip")
