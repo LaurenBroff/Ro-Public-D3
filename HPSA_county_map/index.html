@@ -138,7 +138,7 @@
  			d.id = +d.FIPS;
  		 pairRateWithId[d.id] = +d.rate;
  		 pairNameWithId[d.id] = d.county_name;
-		 pairNumWithId[d.id] = d.Description;
+		 pairNumWithId[d.id] = d.Population_2010;
  		 });
 
 
@@ -164,7 +164,7 @@
  		 d3.select(this).transition().duration(300).style({'opacity': 1, 'stroke': 'a9a9a9', 'stroke-width': 1.5});
  		 div.transition().duration(300)
  		 .style("opacity", 1)
- 		 div.text(pairNameWithId[d.id] + ": " + pairNumWithId[d.id])
+ 		 div.text(pairNameWithId[d.id] + ": Population of " + pairNumWithId[d.id])
  		 .style("left", (d3.event.pageX) + "px")
  		 .style("top", (d3.event.pageY -30) + "px");
 
