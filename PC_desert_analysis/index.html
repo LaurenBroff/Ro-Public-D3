@@ -98,7 +98,6 @@
 		 function ready(error, us, data) {
  		 var pairRateWithId = {};
  		 var pairNameWithId = {};
- 		 var pairBBWithId = {};
 		 var pairNumWithId = {};
  		//Moves selction to front
  		d3.selection.prototype.moveToFront = function() {
@@ -119,7 +118,7 @@
  			d.id = +d.FIPS;
  		 pairRateWithId[d.id] = +d.rate;
  		 pairNameWithId[d.id] = d.county_name;
-		 pairNumWithId[d.id] = d.Description;
+		 pairNumWithId[d.id] = d.RUCC_2013;
  		 });
  		 svg.append("g")
  		 .attr("class", "counties")
@@ -141,7 +140,7 @@
  		 d3.select(this).transition().duration(300).style({'opacity': 1, 'stroke': 'a9a9a9', 'stroke-width': 1.5});
  		 div.transition().duration(300)
  		 .style("opacity", 1)
- 		 div.text(pairNameWithId[d.id] + ": " + pairNumWithId[d.id])
+ 		 div.text(pairNameWithId[d.id] + ": RUCC Code " + pairNumWithId[d.id])
  		 .style("left", (d3.event.pageX) + "px")
  		 .style("top", (d3.event.pageY -30) + "px");
  		 })
