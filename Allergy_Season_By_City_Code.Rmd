@@ -1,0 +1,541 @@
+---
+title: "allergy_season_by_city"
+author: "Lauren Broffman"
+date: "2/5/2020"
+output: html_document
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(rnoaa)
+library(foreach)
+library(ggplot2)
+library(viridis)
+library(gganimate)
+library(hrbrthemes)
+library(transformr)
+library(ggthemes)
+library(data.table)
+library(broom)
+library(broom)
+
+#Set up API key to pull the data from the NOAA website, store in an .eviron file, and then call it here:
+
+options("noaa_geocode_key" = Sys.getenv("noaa_geocode_key"))
+
+```
+
+```{r}
+
+#Setup colors for the chart
+
+ro_colors <- c(
+  `redro`        = "#d11141",
+  `bluero`       = "#1d2733b",
+  `orangero`     = "#ff412d",
+  `tanro`        = "#ffca8c",
+  `light bluero` = "##d1eff7",
+  `greenro`      = "#1ece96")
+
+
+ro_cols <- function(...) {
+  cols <- c(...)
+
+  if (is.null(cols))
+    return (ro_colors)
+
+  ro_colors[cols]
+}
+
+
+ro_palettes <- list(
+  `main`  = ro_cols("red", "orange", "blue", "green", "tan", "light blue"))
+
+ro_pal <- function(palette = "main", reverse = FALSE, ...) {
+  pal <- ro_palettes[[palette]]
+
+  if (reverse) pal <- rev(pal)
+
+  colorRampPalette(pal, ...)
+}
+  
+  
+  scale_color_ro <- function(palette = "main", discrete = TRUE, reverse = FALSE, ...) {
+  
+    pal <- ro_pal(palette = palette, reverse = reverse)
+
+  if (discrete) {
+    discrete_scale("colour", paste0("drsimonj_", palette), palette = pal, ...)
+  } else {
+    scale_color_gradientn(colours = pal(256), ...)
+  }
+}
+
+  
+  
+
+```
+
+```{r}
+#This could have been a function, but we broke out the code for each city:
+
+#Pull data for Springfield, MA
+
+test <- meteo_tidy_ghcnd(stationid = "USC00190120", date_min = "1950-09-01", date_max = "2019-08-31")
+
+test <- test %>% mutate(tmax = tmax/10,
+                        tmin = tmin/10,
+                        Year = lubridate::year(date),
+                        Month = lubridate::month(date),
+                        Day = lubridate::day(date)
+                        )
+
+test <- test %>% mutate(season = ifelse(Month %in% 3:5, "spring", 
+                                 ifelse(Month %in%  6:8, "summer", 
+                                  ifelse(Month %in%  9:11, "fall", "winter")
+                                  )))
+
+test <- test %>% mutate(frost_year = ifelse(season == 'fall' | Month == 12, Year + 1, Year))
+
+
+test <- test %>% select(date, Year, Month, Day, tmin, frost_year)
+
+final <- test %>% 
+  filter(tmin <= 0) %>% 
+    group_by(frost_year) %>% 
+        summarise(first_fall_frost = as.POSIXct(min(date)), 
+                  last_spring_frost = as.POSIXct(max(date)))
+ 
+final_season_length_Spring <- final %>% mutate(frost_season_length =   
+                  difftime(last_spring_frost, first_fall_frost, unit = "days"),
+                  City = "Springfield, MA")
+
+Spring_frostfree <- test %>% filter(tmin > 0) %>% group_by(Year) %>% tally()
+
+Spring_frostfree <- Spring_frostfree %>% mutate(City = 'Springfield, MA')
+
+```
+
+```{r}
+
+#Lousiville, KY
+
+test <- meteo_tidy_ghcnd(stationid = "USW00093821", date_min = "1950-09-01", date_max = "2019-08-31")
+
+test <- test %>% mutate(tmax = tmax/10,
+                        tmin = tmin/10,
+                        Year = lubridate::year(date),
+                        Month = lubridate::month(date),
+                        Day = lubridate::day(date)
+                        )
+
+test <- test %>% mutate(season = ifelse(Month %in% 3:5, "spring", 
+                                 ifelse(Month %in%  6:8, "summer", 
+                                  ifelse(Month %in%  9:11, "fall", "winter")
+                                  )))
+
+test <- test %>% mutate(frost_year = ifelse(season == 'fall' | Month == 12, Year + 1, Year))
+
+
+test <- test %>% select(date, Year, Month, Day, tmin, frost_year)
+
+final <- test %>% 
+  filter(tmin <= 0) %>% 
+    group_by(frost_year) %>% 
+        summarise(first_fall_frost = as.POSIXct(min(date)), 
+                  last_spring_frost = as.POSIXct(max(date)))
+ 
+final_season_length_Louis <- final %>% mutate(frost_season_length =   
+                  difftime(last_spring_frost, first_fall_frost, unit = "days"),
+                  City = "Lousiville, KY")
+
+Louis_frostfree <- test %>% filter(tmin > 0) %>% group_by(Year) %>% tally()
+
+Louis_frostfree <- Louis_frostfree %>% mutate(City = 'Lousiville, KY')
+
+```
+
+```{r}
+
+#New Orleans, LA
+
+test <- meteo_tidy_ghcnd(stationid = "USW00012916", date_min = "1950-09-01", date_max = "2019-08-31")
+
+test <- test %>% mutate(tmax = tmax/10,
+                        tmin = tmin/10,
+                        Year = lubridate::year(date),
+                        Month = lubridate::month(date),
+                        Day = lubridate::day(date)
+                        )
+
+test <- test %>% mutate(season = ifelse(Month %in% 3:5, "spring", 
+                                 ifelse(Month %in%  6:8, "summer", 
+                                  ifelse(Month %in%  9:11, "fall", "winter")
+                                  )))
+
+test <- test %>% mutate(frost_year = ifelse(season == 'fall' | Month == 12, Year + 1, Year))
+
+
+test <- test %>% select(date, Year, Month, Day, tmin, frost_year)
+
+final <- test %>% 
+  filter(tmin <= 0) %>% 
+    group_by(frost_year) %>% 
+        summarise(first_fall_frost = as.POSIXct(min(date)), 
+                  last_spring_frost = as.POSIXct(max(date)))
+ 
+final_season_length_NO <- final %>% mutate(frost_season_length =   
+                  difftime(last_spring_frost, first_fall_frost, unit = "days"),
+                  City = "New Orleans, LA")
+
+NO_frostfree <- test %>% filter(tmin > 0) %>% group_by(Year) %>% tally()
+
+NO_frostfree <- NO_frostfree %>% mutate(City = 'New Orleans, LA')
+
+```
+
+```{r}
+
+#Scranton, PA
+
+test <- meteo_tidy_ghcnd(stationid = "USW00014777", date_min = "1950-09-01", date_max = "2019-08-31")
+
+test <- test %>% mutate(tmax = tmax/10,
+                        tmin = tmin/10,
+                        Year = lubridate::year(date),
+                        Month = lubridate::month(date),
+                        Day = lubridate::day(date)
+                        )
+
+test <- test %>% mutate(season = ifelse(Month %in% 3:5, "spring", 
+                                 ifelse(Month %in%  6:8, "summer", 
+                                  ifelse(Month %in%  9:11, "fall", "winter")
+                                  )))
+
+test <- test %>% mutate(frost_year = ifelse(season == 'fall' | Month == 12, Year + 1, Year))
+
+
+test <- test %>% select(date, Year, Month, Day, tmin, frost_year)
+
+final <- test %>% 
+  filter(tmin <= 0) %>% 
+    group_by(frost_year) %>% 
+        summarise(first_fall_frost = as.POSIXct(min(date)), 
+                  last_spring_frost = as.POSIXct(max(date)))
+ 
+final_season_length_Scrant <- final %>% mutate(frost_season_length =   
+                  difftime(last_spring_frost, first_fall_frost, unit = "days"),
+                  City = "Scranton, PA")
+
+Scrant_frostfree <- test %>% filter(tmin > 0) %>% group_by(Year) %>% tally()
+
+Scrant_frostfree <- Scrant_frostfree %>% mutate(City = 'Scranton, PA')
+
+```
+
+
+
+
+```{r}
+
+#Baton Rouge, LA
+
+test <- meteo_tidy_ghcnd(stationid = "USW00013970", date_min = "1950-09-01", date_max = "2019-08-31")
+
+test <- test %>% mutate(tmax = tmax/10,
+                        tmin = tmin/10,
+                        Year = lubridate::year(date),
+                        Month = lubridate::month(date),
+                        Day = lubridate::day(date)
+                        )
+
+test <- test %>% mutate(season = ifelse(Month %in% 3:5, "spring", 
+                                 ifelse(Month %in%  6:8, "summer", 
+                                  ifelse(Month %in%  9:11, "fall", "winter")
+                                  )))
+
+test <- test %>% mutate(frost_year = ifelse(season == 'fall' | Month == 12, Year + 1, Year))
+
+
+test <- test %>% select(date, Year, Month, Day, tmin, frost_year)
+
+final <- test %>% 
+  filter(tmin <= 0) %>% 
+    group_by(frost_year) %>% 
+        summarise(first_fall_frost = as.POSIXct(min(date)), 
+                  last_spring_frost = as.POSIXct(max(date)))
+ 
+final_season_length_Bat <- final %>% mutate(frost_season_length =   
+                  difftime(last_spring_frost, first_fall_frost, unit = "days"),
+                  City = "Baton Rouge, LA")
+
+Bat_frostfree <- test %>% filter(tmin > 0) %>% group_by(Year) %>% tally()
+
+Bat_frostfree <- Bat_frostfree %>% mutate(City = 'Baton Rouge, LA')
+
+```
+
+```{r}
+
+#Richmond, VA
+
+test <- meteo_tidy_ghcnd(stationid = "USW00013740", date_min = "1950-09-01", date_max = "2019-08-31")
+
+test <- test %>% mutate(tmax = tmax/10,
+                        tmin = tmin/10,
+                        Year = lubridate::year(date),
+                        Month = lubridate::month(date),
+                        Day = lubridate::day(date)
+                        )
+
+test <- test %>% mutate(season = ifelse(Month %in% 3:5, "spring", 
+                                 ifelse(Month %in%  6:8, "summer", 
+                                  ifelse(Month %in%  9:11, "fall", "winter")
+                                  )))
+
+test <- test %>% mutate(frost_year = ifelse(season == 'fall' | Month == 12, Year + 1, Year))
+
+
+test <- test %>% select(date, Year, Month, Day, tmin, frost_year)
+
+final <- test %>% 
+  filter(tmin <= 0) %>% 
+    group_by(frost_year) %>% 
+        summarise(first_fall_frost = as.POSIXct(min(date)), 
+                  last_spring_frost = as.POSIXct(max(date)))
+ 
+final_season_length_Rich <- final %>% mutate(frost_season_length =   
+                  difftime(last_spring_frost, first_fall_frost, unit = "days"),
+                  City = "Richmond, VA")
+
+Rich_frostfree <- test %>% filter(tmin > 0) %>% group_by(Year) %>% tally()
+
+Rich_frostfree <- Rich_frostfree %>% mutate(City = "Richmond, VA")
+
+```
+
+```{r}
+#Memphis
+
+test <- meteo_tidy_ghcnd(stationid = "USW00013893", date_min = "1950-09-01", date_max = "2019-8-31")
+
+test <- test %>% mutate(tmax = tmax/10,
+                        tmin = tmin/10,
+                        Year = lubridate::year(date),
+                        Month = lubridate::month(date),
+                        Day = lubridate::day(date)
+                        )
+
+test <- test %>% mutate(season = ifelse(Month %in% 3:5, "spring", 
+                                 ifelse(Month %in%  6:8, "summer", 
+                                  ifelse(Month %in%  9:11, "fall", "winter")
+                                  )))
+
+test <- test %>% mutate(frost_year = ifelse(season == 'fall' | Month == 12, Year + 1, Year))
+
+
+test <- test %>% select(date, Year, Month, Day, tmin, frost_year)
+
+final <- test %>% 
+  filter(tmin <= 0) %>% 
+    group_by(frost_year) %>% 
+        summarise(first_fall_frost = as.POSIXct(min(date)), 
+                  last_spring_frost = as.POSIXct(max(date)))
+ 
+final_season_length_Memphis <- final %>% mutate(frost_season_length =   
+                  difftime(last_spring_frost, first_fall_frost, unit = "days"),
+                  City = "Memphis, TN")
+                  
+
+Memphis_frostfree <- test %>% filter(tmin > 0) %>% group_by(Year) %>% tally()
+
+Memphis_frostfree <- Memphis_frostfree %>% mutate(City = 'Memphis, TN')
+
+
+```
+
+
+
+```{r}
+#McT Data Climate Change
+test <- meteo_tidy_ghcnd(stationid = "USW00012959", date_min = "1950-09-01", date_max = "2019-8-31")
+
+test <- test %>% mutate(tmax = tmax/10,
+                        tmin = tmin/10,
+                        Year = lubridate::year(date),
+                        Month = lubridate::month(date),
+                        Day = lubridate::day(date)
+                        )
+
+test <- test %>% mutate(season = ifelse(Month %in% 3:5, "spring", 
+                                 ifelse(Month %in%  6:8, "summer", 
+                                  ifelse(Month %in%  9:11, "fall", "winter")
+                                  )))
+
+test <- test %>% mutate(frost_year = ifelse(season == 'fall' | Month == 12, Year + 1, Year))
+
+
+test <- test %>% select(date, Year, Month, Day, tmin, frost_year)
+
+final <- test %>% 
+  filter(tmin <= 0) %>% 
+    group_by(frost_year) %>% 
+        summarise(first_fall_frost = as.POSIXct(min(date)), 
+                  last_spring_frost = as.POSIXct(max(date)))
+ 
+final_season_length_McT <- final %>% mutate(frost_season_length =   
+                  difftime(last_spring_frost, first_fall_frost, unit = "days"),
+                 City = "McAllen, TX")
+
+McT_frostfree <- test %>% filter(tmin > 0) %>% group_by(Year) %>% tally()
+
+McT_frostfree <- McT_frostfree %>% mutate(City = 'McAllen, TX')
+
+#Merge
+
+
+
+```
+
+```{r}
+#Jackson Data Climate Change
+
+test <- meteo_tidy_ghcnd(stationid = "USW00003940", date_min = "1950-09-01", date_max = "2019-08-31")
+
+test <- test %>% mutate(tmax = tmax/10,
+                        tmin = tmin/10,
+                        Year = lubridate::year(date),
+                        Month = lubridate::month(date),
+                        Day = lubridate::day(date)
+                        )
+
+test <- test %>% mutate(season = ifelse(Month %in% 3:5, "spring", 
+                                 ifelse(Month %in%  6:8, "summer", 
+                                  ifelse(Month %in%  9:11, "fall", "winter")
+                                  )))
+
+test <- test %>% mutate(frost_year = ifelse(season == 'fall' | Month == 12, Year + 1, Year))
+
+
+test <- test %>% select(date, Year, Month, Day, tmin, frost_year)
+
+final <- test %>% 
+  filter(tmin <= 0) %>% 
+    group_by(frost_year) %>% 
+        summarise(first_fall_frost = as.POSIXct(min(date)), 
+                  last_spring_frost = as.POSIXct(max(date)))
+
+ 
+final_season_length_Jackson <- final %>% mutate(frost_season_length =   
+                  difftime(last_spring_frost, first_fall_frost, unit = "days"),
+                  City = "Jackson, MS")
+
+Jackson_frostfree <- test %>% filter(tmin > 0) %>% group_by(Year) %>% tally()
+
+Jackson_frostfree <- Jackson_frostfree %>% mutate(City = 'Jackson, MS')
+
+
+
+
+```
+
+```{r}
+
+#Providence
+test <- meteo_tidy_ghcnd(stationid = "USW00014765", date_min = "1950-09-01", date_max = "2019-08-31")
+
+test <- test %>% mutate(tmax = tmax/10,
+                        tmin = tmin/10,
+                        Year = lubridate::year(date),
+                        Month = lubridate::month(date),
+                        Day = lubridate::day(date)
+                        )
+
+test <- test %>% mutate(season = ifelse(Month %in% 3:5, "spring", 
+                                 ifelse(Month %in%  6:8, "summer", 
+                                  ifelse(Month %in%  9:11, "fall", "winter")
+                                  )))
+
+test <- test %>% mutate(frost_year = ifelse(season == 'fall' | Month == 12, Year + 1, Year))
+
+
+test <- test %>% select(date, Year, Month, Day, tmin, frost_year)
+
+final <- test %>% 
+  filter(tmin <= 0) %>% 
+    group_by(frost_year) %>% 
+        summarise(first_fall_frost = as.POSIXct(min(date)), 
+                  last_spring_frost = as.POSIXct(max(date)))
+ 
+final_season_length_Prov <- final %>% mutate(frost_season_length =   
+                  difftime(last_spring_frost, first_fall_frost, unit = "days"),
+                  City = "Providence, RI")
+
+Prov_frostfree <- test %>% filter(tmin > 0) %>% group_by(Year) %>% tally()
+
+Prov_frostfree <- Prov_frostfree %>% mutate(City = 'Providence, RI')
+
+
+```
+
+`
+
+```{r}
+#Bind dfs together for plots 
+frost_sn_all <- rbind(final_season_length_Prov, final_season_length_Jackson, final_season_length_Memphis, final_season_length_McT, final_season_length_Bat, final_season_length_NO, final_season_length_Rich, final_season_length_Scrant, final_season_length_Spring, final_season_length_Louis)
+
+frost_sn_all <- frost_sn_all %>% mutate(Year = as.integer(frost_year))
+
+frost_sn_all <- frost_sn_all %>% mutate(allergy_season_length = 365-as.numeric(frost_season_length))
+
+#Put them in a csv so pulls do not need to be repeated
+#write.csv(frost_sn_all, "frost_sn_all.csv")
+
+```
+
+
+
+```{r}
+#Get a regression line to for charts - change in the Number of FROST FREE DAYS. This requires the broom package
+
+lin_mod <- lm(allergy_season_length ~ frost_year + City, data = frost_sn_all)
+
+summary(lin_mod)
+
+aug_mod <- augment(lin_mod)
+
+aug_mod <- left_join(aug_mod, frost_sn_all)
+
+```
+
+```{r}
+#Use gg animate to plot. Filter out earlier years because of missing data
+
+ p <- aug_mod %>%
+  filter(Year >= 1960) %>% 
+  ggplot( aes(x=Year, y=allergy_season_length, group=City, color=City)) +
+  geom_line(aes(group = City, y = .fitted), size = 0.5, linetype = "dashed", color = 'black') +
+  geom_point(show.legend = FALSE) +
+  geom_line(aes(group = City), show.legend = FALSE) +
+   scale_color_manual(values=c("#d11141","#1d2733", "#ff412d", "#1ece96", "#d1eff7", "#d11141","#1d2733", "#ff412d", "#1ece96", "#d1eff7")) +
+    transition_reveal(Year) +
+  labs(title = "Number of days in Allergy Season, 1960—2019",
+       x = "Year",
+       y = 'Number of Days') + theme_hc() +
+   facet_wrap(~City, nrow = 2) +
+ theme(panel.spacing.x=unit(2, "lines")) +
+   theme(plot.title = element_text(hjust = 0.5, face = 'bold', color = 'black'), ) +  theme(axis.title.x = element_text(face = 'bold', color = 'black')) + theme(axis.title.y = element_text(face = 'bold', color = 'black')) + ylim(100, 365)
+
+
+#Animate, set size and include a command to have the gif pause before relooping
+ 
+animate(p, height = 400, width = 975, end_pause = 30)
+
+
+
+```
+
