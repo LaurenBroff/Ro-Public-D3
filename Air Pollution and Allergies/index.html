@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<style>
+
+body {
+  font-family: 'Roboto', sans-serif;
+}
+
+.county {
+  font-family: 'Roboto', sans-serif
+  ;
+  font-weight: bold;
+}
+
+.states {
+  stroke: none;
+  stroke-width: .5;
+  fill: none;
+}
+
+.bubbles {
+  stroke: none;
+  fill-opacity: .7;
+}
+
+
+.legend {
+	font-size: 14px;
+	font-family: 'Roboto', sans-serif;
+}
+.legend_title {
+	font-size: 14px;
+	font-family: 'Roboto', sans-serif;
+	font-weight: bold;
+}
+
+#popoverText {
+  position: absolute;
+  text-align: center;
+  padding: 2px;
+  font: 12px sans-serif;
+  background: #fff;
+  border: 0px;
+  border-radius: 12px;
+  pointer-events: none;
+  opacity: 0;
+}
+
+#legend text {
+  font-size: 0.9em;
+  color: #333;
+  font-weight: 400;
+}
+
+</style>
+<h1 id='title'>Air Pollution Levels and Currently Practicing Allergists </h1>
+ <p id='description'>
+   Amount of Air Pollution (PM2.5) & Rate of Practicing Allergists Per 100k ppl by County
+ </p>
+ <body>
+   <div id="buttons">
+     <button id="bubblesOn">Show Allergists</button>
+     <button id="bubblesOff">Turn off Allergists</button>
+   </div>
+   <!-- for legend  -->
+   <svg width="900" height="77"></svg>
+   <div id="chart-container">  </div>
+   <div id='popoverText'> </div>
+   <script src="https://d3js.org/d3.v4.min.js"></script>
+   <script src="https://d3js.org/topojson.v1.min.js"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
+   <script src="https://d3js.org/d3-scale-chromatic.v0.3.min.js"></script>
+
+   <script>
+
+
+var interpolators = [
+    // These are from d3-scale.
+    "Viridis",
+    "Inferno",
+    "Magma",
+    "Plasma",
+    "Warm",
+    "Cool",
+    "Rainbow",
+    "CubehelixDefault",
+    // These are from d3-scale-chromatic
+    "Blues",
+    "Greens",
+    "Greys",
+    "Oranges",
+    "Purples",
+    "Reds",
+    "BuGn",
+    "BuPu",
+    "GnBu",
+    "OrRd",
+    "PuBuGn",
+    "PuBu",
+    "PuRd",
+    "RdPu",
+    "YlGnBu",
+    "YlGn",
+    "YlOrBr",
+    "YlOrRd",
+    "PuOr",
+    "OrPu"
+  ];
+
+  var linear = d3.scaleSequential(d3.interpolatePuOr)
+    .domain([16, 0]);
+
+
+  var svg = d3.select("svg");
+
+  svg.append("g")
+    .attr("class", "legendLinear")
+    .attr("transform", "translate(400,30)")
+    .style("font-size","10px")
+  ;
+
+  var legendLinear = d3.legendColor()
+  .title("Avg. particulate matter (PM) w/diameter < 2.5 micrometers")
+    .shapeWidth(30)
+    .orient('horizontal')
+    .scale(linear)
+    .cells([0, 3, 6, 9, 12, 15, 18]);
+
+
+  svg.select(".legendLinear")
+    .call(legendLinear);
+
+  var linearSize = d3.scaleLinear().domain([1, 10]).range([3, 14]);
+
+  var svg = d3.select("svg");
+
+  svg.append("g")
+  .attr("class", "legendSize")
+  .attr("transform", "translate(700, 24)")
+  .style("font-size","10px")
+  ;
+
+  var legendSize = d3.legendSize()
+  .scale(linearSize)
+  .shape('circle')
+  .shapePadding(15)
+  .labelOffset(20)
+  .orient('horizontal')
+  .title("Rate of Allegists to 100k Pop")
+  ;
+
+  svg.select(".legendSize")
+  .call(legendSize);
+
+
+
+var margin = {top: 50, right: 5, bottom: 5, left: 30};
+var width = 900 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var svg = d3.select("#chart-container")
+    .append("svg")
+      .attr("class", "map")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+queue()
+    .defer(d3.csv, "num_allergists_2.csv")
+    .defer(d3.json, "us.json")
+    .defer(d3.csv, "rwj_air_2019.csv")
+    .await(ready);
+
+
+
+
+function ready(error, allergy, us, air) {
+
+  if (error) throw error;
+  console.log(us)
+  console.log(allergy)
+  console.log(air)
+;
+
+  var allergyLookup = {};
+  allergy.forEach(function(d) {
+    allergyLookup[d.fips] = d.allergist_rate;
+  })
+
+  var airLookup = {};
+  air.forEach(function(d) {
+    d.air_particulate = +d.air_particulate
+    d.FIPS = +d.FIPS;
+    airLookup[d.FIPS] = d.air_particulate;
+
+  })
+
+
+
+  var counties = topojson.feature(us, us.objects.counties),
+      states = topojson.feature(us, us.objects.states);
+
+  var path = d3.geoPath()
+      .projection(d3.geoAlbersUsa()
+        .fitSize([width, height], counties));
+
+              var colorScale = d3.scaleSequential(d3.interpolatePuOr)
+              .domain([14, 3]);
+
+
+  var countyPaths = svg.selectAll(".counties")
+      .data(counties.features)
+      .enter().append("path")
+      .attr("class", "counties")
+      .style("fill", function(d) {
+        return colorScale(airLookup[d.id]);
+      })
+      .attr("d", function(d) { return path(d); })
+
+  var statePaths = svg.selectAll(".states")
+        .data(states.features)
+        .enter().append("path")
+        .attr("class", "states")
+        .attr("d", function(d) { return path(d); })
+
+
+        var allergColorScale = d3.scaleLinear(d3.interpolateGreys)
+          .domain([0, 3]);
+
+
+        var allergBubbles = svg.selectAll(".bubbles")
+            .data(counties.features)
+            .enter().append("circle")
+            .attr("class", "bubbles")
+            .attr("r", function(d) { return (Math.sqrt(allergyLookup[d.id])*1.75)  })
+            .attr("cx", function(d) { return path.centroid(d)[0] })
+            .attr("cy", function(d) { return path.centroid(d)[1] })
+            .style("fill", function(d) { return allergColorScale(allergyLookup[d.id]); })
+
+        d3.selectAll("button")
+        .on("click", function() {
+          console.log(this.id);
+
+          var bubbleType = this.id;
+
+          d3.selectAll(".bubbles")
+              .transition()
+              .duration(1200)
+              .attr("r", function(d) {
+                return (bubbleType == "bubblesOff" ? 0 : (Math.sqrt(allergyLookup[d.id])*1.75))
+                on("mouseover", mouseover)
+            .on("mousemove", mousemove)
+            .on("mouseleave", mouseleave)
+              })
+
+
+
+        })
+
+        }
+</script>
+</body>
