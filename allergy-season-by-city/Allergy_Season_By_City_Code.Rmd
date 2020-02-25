@@ -23,7 +23,7 @@ library(data.table)
 library(broom)
 library(broom)
 
-#Set up API key to pull the data from the NOAA website, store in an .eviron file, and then call it here:
+#Set up API key to pull the data from the NOAA website, store in an .eviron file, and then call it here. You can find detailed instructions at https://cran.r-project.org/web/packages/countyweather/README.html :
 
 options("noaa_geocode_key" = Sys.getenv("noaa_geocode_key"))
 
@@ -81,6 +81,10 @@ ro_pal <- function(palette = "main", reverse = FALSE, ...) {
 ```
 
 ```{r}
+# To find the weather station ID you are interested in, go here and use the search tool: https://www.ncdc.noaa.gov/data-access/land-based-station-data/find-station 
+
+#We noticed that stations at airports tended to have the most complete data
+
 #This could have been a function, but we broke out the code for each city:
 
 #Pull data for Springfield, MA
