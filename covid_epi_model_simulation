@@ -1,0 +1,103 @@
+---
+title: "Epi_model_triage"
+author: "Lauren Broffman"
+date: "3/31/2020"
+output: pdf_document
+---
+
+```{r}
+
+#Code taken from http://statnet.org/tut/BasicDCMs.html
+
+SEIR <- function(t, t0, parms) {
+  with(as.list(c(t0, parms)), {
+    
+    # Population size
+    num <- s.num + e.num + i.num + r.num
+    
+    # Effective contact rate and FOI from a rearrangement of Beta * c * D
+    ce <- R0 / i.dur
+    lambda <- ce * i.num/num
+  
+    dS <- -lambda*s.num
+    dE <- lambda*s.num - (1/e.dur)*e.num
+    dI <- (1/e.dur)*e.num - (1 - cfr)*(1/i.dur)*i.num - cfr*(1/i.dur)*i.num
+    dR <- (1 - cfr)*(1/i.dur)*i.num
+    
+    # Compartments and flows are part of the derivative vector
+    # Other calculations to be output are outside the vector, but within the containing list
+    list(c(dS, dE, dI, dR, 
+           se.flow = lambda * s.num,
+           ei.flow = (1/e.dur) * e.num,
+           ir.flow = (1 - cfr)*(1/i.dur) * i.num,
+           d.flow = cfr*(1/i.dur)*i.num),
+         num = num,
+         i.prev = i.num / num,
+         ei.prev = (e.num + i.num)/num)
+  })
+}
+```
+
+```{r}
+
+param <- param.dcm(R0 = 2.28, e.dur = 4, i.dur = 14, cfr = c(0.066))
+init <- init.dcm(s.num = 770, e.num = 65, i.num = 65, r.num = 0,
+                 se.flow = 0, ei.flow = 0, ir.flow = 0, d.flow = 0)
+control <- control.dcm(nsteps = 120, dt = 1, new.mod = SEIR)
+mod_1 <- dcm(param, init, control)
+
+par(mfrow = c(1, 2))
+
+plot(mod_1, y = "i.num", run = 1, main = "Prevalence")
+plot(mod_1, y = "se.flow", run = 1, main = "Incidence")
+
+
+par(mfrow = c(1, 2))
+plot(mod_1, y = "i.num", main = "Number Infected")
+plot(mod_1, y = "i.prev", main = "Percent Infected", ylim = c(0, 0.5), legend = "full")
+
+mod_1_df <- as.data.frame(mod_1)
+
+mod_1_df$quarantine <- "No Self-Isolation"
+
+
+```
+
+```{r}
+param <- param.dcm(R0 = 2.28, e.dur = 4, i.dur = 14, cfr = c(0.066))
+init <- init.dcm(s.num = 805, e.num = 30, i.num = 30, r.num = 35,
+                 se.flow = 0, ei.flow = 0, ir.flow = 0, d.flow = 0)
+control <- control.dcm(nsteps = 120, dt = 1, new.mod = SEIR)
+mod_2 <- dcm(param, init, control)
+
+par(mfrow = c(1, 2))
+
+plot(mod_2, y = "i.num", run = 1, main = "Prevalence")
+plot(mod_2, y = "se.flow", run = 1, main = "Incidence")
+
+
+par(mfrow = c(1, 2))
+plot(mod_2, y = "i.num", main = "Number Infected")
+plot(mod_2, y = "i.prev", main = "Percent Infected", ylim = c(0, 0.5), legend = "full")
+
+
+mod_2_df <- as.data.frame(mod_2)
+
+mod_2_df$quarantine <- "Self-Isolation"
+
+```
+
+```{r}
+
+mod_all <- rbind(mod_1_df, mod_2_df)
+
+
+ggplot(mod_all, aes(x=time, y=0, xend=time, yend=i.num, color=quarantine)) + geom_segment(alpha=0.7) + 
+  geom_line(aes(x=time, y=i.num)) + 
+  xlab("Time in Days") + ylab("Number of Cases") +
+  theme_hc() + 
+   scale_color_manual(values=c("#1d2733", "#1ece96"))  +
+   theme(plot.title = element_text(hjust = 0.5, face = 'bold', color = 'black'), ) +  theme(axis.title.x = element_text(face = 'bold', color = 'black')) + theme(axis.title.y = element_text(face = 'bold', color = 'black')) + theme(legend.title = element_blank()) + xlim(0, 120) + ylim(0, 190) +
+  labs(title = "SEIR Model: Impact of Self-Isolation")
+ 
+```
